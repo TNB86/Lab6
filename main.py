@@ -1,15 +1,17 @@
-import pygame as pg
-from threading import Thread, RLock
 from datetime import datetime
 from random import choice, randrange
 from string import ascii_letters
+from threading import Thread, RLock
+
+
+import pygame as pg
 import win32api as wapi
 
 pg.init()
 pg.display.set_caption('Press Esc to Exit, Size is 80x10')
 
 # Настройки дисплея
-WIDTH, HEIGHT = 575, 160
+WIDTH, HEIGHT = 640, 160
 SURFACE = pg.display.set_mode((WIDTH, HEIGHT))
 
 # Настройки шрифтов
@@ -25,7 +27,6 @@ GREEN_ALPHABET_AND_NUMBERS = [FONT.render(str(char), True, pg.Color('green')) fo
 # Объект замка
 LOCK = RLock()
 
-down_key = ""
 keyList = ["\b"]
 for char in "ABCDEFGHIJKLMNOPQRSTUVWXYZ 123456789,.'£$/\\":
     keyList.append(char)
@@ -56,11 +57,9 @@ class SymbolColumn:
 
 
 def key_check():
-    keys = []
     for key in keyList:
         if wapi.GetAsyncKeyState(ord(key)):
-            keys.append(key)
-    return keys
+            return str(key)
 
 
 # def название_воркера():
@@ -76,22 +75,11 @@ def random_chars():
     while True:
         SURFACE.fill('black')
         [symbol_column.draw() for symbol_column in symbol_columns]
-
-        LOCK.acquire()
-        CLOCK.tick(60)
-        LOCK.release()
-
-
-def date_status():
-    print('Воркер \'Статус даты\' начинает работу')
-
-    while True:
         now = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
         now_ren = FONT.render(now, True, pg.Color('white'))
 
-        SURFACE.blit(now_ren, (450, 0))
+        SURFACE.blit(now_ren, (515, 0))
         pg.display.flip()
-
         LOCK.acquire()
         CLOCK.tick(60)
         LOCK.release()
@@ -101,11 +89,11 @@ def key_status():
     print('Воркер \'Статус даты\' начинает работу')
 
     while True:
-        if pg.key.get_pressed():
-            key = FONT.render("".join(key_check()).encode("UTF-8"), True, pg.Color('white'))
-            down_key = key
-        SURFACE.blit(down_key, (300, 0))
-        pg.display.flip()
+        if key_check() != None:
+            down_key = FONT.render(key_check(), True, pg.Color('white'))
+            SURFACE.blit(down_key, (365, 0))
+            pg.display.flip()
+            print(down_key)
 
         LOCK.acquire()
         CLOCK.tick(60)
@@ -119,17 +107,14 @@ if __name__ == '__main__':
 
     # Создаем потоки
     chars_thread = Thread(target=random_chars)
-    date_thread = Thread(target=date_status)
     key_thread = Thread(target=key_status)
 
     # Флаг отвечает за то, что потоки живы, до конца жизненного цикла основной программы
     chars_thread.setDaemon(True)
-    date_thread.setDaemon(True)
     key_thread.setDaemon(True)
 
     # Стартум потоки
     chars_thread.start()
-    date_thread.start()
     key_thread.start()
 
     # Отслеживаем события для выхода из программы
